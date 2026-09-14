@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="1000" height="580" font-family="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif">
+  <defs>
+    <marker id="a3" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#57606A"/>
+    </marker>
+    <marker id="a3b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#0969DA"/>
+    </marker>
+    <marker id="a3g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#1A7F37"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="580" fill="#ffffff"/>
+  <text x="500" y="34" text-anchor="middle" font-size="21" font-weight="700" fill="#1F2328">线程安全队列 · 生产者-消费者模型</text>
+
+  <!-- 生产者 -->
+  <rect x="30" y="140" width="188" height="128" rx="10" fill="#DDF4FF" stroke="#0969DA" stroke-width="1.5"/>
+  <text x="124" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#0A3069">生产者</text>
+  <text x="124" y="194" text-anchor="middle" font-size="12" fill="#0969DA">主线程（epoll）</text>
+  <text x="124" y="216" text-anchor="middle" font-size="11.5" fill="#0969DA">收到指令后封包</text>
+  <text x="124" y="238" text-anchor="middle" font-size="11.5" fill="#0969DA">调用 queue_push()</text>
+
+  <!-- 队列 -->
+  <rect x="288" y="86" width="424" height="236" rx="12" fill="#FBEFFF" stroke="#8250DF" stroke-width="1.6"/>
+  <text x="500" y="114" text-anchor="middle" font-size="14.5" font-weight="700" fill="#553098">线程安全环形队列 msg_queue_t</text>
+
+  <!-- buffer 格子 -->
+  <g>
+    <rect x="318" y="132" width="42" height="44" rx="5" fill="#ffffff" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="366" y="132" width="42" height="44" rx="5" fill="#E9D8FD" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="414" y="132" width="42" height="44" rx="5" fill="#E9D8FD" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="462" y="132" width="42" height="44" rx="5" fill="#E9D8FD" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="510" y="132" width="42" height="44" rx="5" fill="#ffffff" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="558" y="132" width="42" height="44" rx="5" fill="#ffffff" stroke="#8250DF" stroke-width="1.2"/>
+    <rect x="606" y="132" width="42" height="44" rx="5" fill="#ffffff" stroke="#8250DF" stroke-width="1.2"/>
+  </g>
+  <text x="500" y="196" text-anchor="middle" font-size="11.5" fill="#8250DF">buffer[QUEUE_SIZE] 环形复用 · head / tail / count 三个游标</text>
+
+  <line x1="318" y1="216" x2="672" y2="216" stroke="#D8B4FE" stroke-width="1"/>
+
+  <text x="340" y="242" font-size="12" fill="#553098">pthread_mutex_t mutex</text>
+  <text x="340" y="264" font-size="12" fill="#553098">pthread_cond_t not_empty</text>
+  <text x="340" y="286" font-size="12" fill="#553098">pthread_cond_t not_full</text>
+  <text x="540" y="242" font-size="11.5" fill="#8250DF">保证 head/tail 互斥访问</text>
+  <text x="540" y="264" font-size="11.5" fill="#8250DF">队列空时唤醒消费者</text>
+  <text x="540" y="286" font-size="11.5" fill="#8250DF">队列满时唤醒生产者</text>
+
+  <!-- 消费者 -->
+  <rect x="782" y="140" width="188" height="128" rx="10" fill="#DAFBE1" stroke="#1A7F37" stroke-width="1.5"/>
+  <text x="876" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#0F5323">消费者</text>
+  <text x="876" y="194" text-anchor="middle" font-size="12" fill="#1A7F37">子线程 1 / 子线程 2</text>
+  <text x="876" y="216" text-anchor="middle" font-size="11.5" fill="#1A7F37">组播发送 / DB 写入</text>
+  <text x="876" y="238" text-anchor="middle" font-size="11.5" fill="#1A7F37">调用 queue_pop()</text>
+
+  <!-- 箭头 -->
+  <path d="M218,186 L284,186" stroke="#0969DA" stroke-width="2" fill="none" marker-end="url(#a3b)"/>
+  <text x="251" y="176" text-anchor="middle" font-size="11" font-weight="600" fill="#0969DA">push</text>
+
+  <path d="M712,206 L778,206" stroke="#1A7F37" stroke-width="2" fill="none" marker-end="url(#a3g)"/>
+  <text x="745" y="196" text-anchor="middle" font-size="11" font-weight="600" fill="#1A7F37">pop</text>
+
+  <path d="M778,246 L712,246" stroke="#8C959F" stroke-width="1.3" stroke-dasharray="4,3" fill="none" marker-end="url(#a3)"/>
+  <text x="745" y="264" text-anchor="middle" font-size="10.5" fill="#8C959F">signal</text>
+  <path d="M284,226 L218,226" stroke="#8C959F" stroke-width="1.3" stroke-dasharray="4,3" fill="none" marker-end="url(#a3)"/>
+  <text x="251" y="244" text-anchor="middle" font-size="10.5" fill="#8C959F">signal</text>
+
+  <!-- 伪代码 -->
+  <rect x="30" y="366" width="452" height="186" rx="10" fill="#F6F8FA" stroke="#D0D7DE" stroke-width="1.4"/>
+  <text x="48" y="392" font-size="13" font-weight="700" fill="#1F2328">生产者 queue_push()</text>
+  <text x="48" y="418" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">lock(&amp;q-&gt;mutex);</text>
+  <text x="48" y="438" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">while (q-&gt;count == QUEUE_SIZE)</text>
+  <text x="66" y="458" font-family="Consolas, monospace" font-size="11.5" fill="#8250DF">wait(&amp;q-&gt;not_full, &amp;q-&gt;mutex);</text>
+  <text x="48" y="478" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">q-&gt;buffer[q-&gt;tail] = *pkt;</text>
+  <text x="48" y="498" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">q-&gt;tail = (q-&gt;tail + 1) % QUEUE_SIZE;</text>
+  <text x="48" y="518" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">q-&gt;count++;</text>
+  <text x="48" y="538" font-family="Consolas, monospace" font-size="11.5" fill="#1A7F37">signal(&amp;q-&gt;not_empty);  unlock(...);</text>
+
+  <rect x="518" y="366" width="452" height="186" rx="10" fill="#F6F8FA" stroke="#D0D7DE" stroke-width="1.4"/>
+  <text x="536" y="392" font-size="13" font-weight="700" fill="#1F2328">消费者 queue_pop()</text>
+  <text x="536" y="418" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">lock(&amp;q-&gt;mutex);</text>
+  <text x="536" y="438" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">while (q-&gt;count == 0)</text>
+  <text x="554" y="458" font-family="Consolas, monospace" font-size="11.5" fill="#8250DF">wait(&amp;q-&gt;not_empty, &amp;q-&gt;mutex);</text>
+  <text x="536" y="478" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">*pkt = q-&gt;buffer[q-&gt;head];</text>
+  <text x="536" y="498" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">q-&gt;head = (q-&gt;head + 1) % QUEUE_SIZE;</text>
+  <text x="536" y="518" font-family="Consolas, monospace" font-size="11.5" fill="#1F2328">q-&gt;count--;</text>
+  <text x="536" y="538" font-family="Consolas, monospace" font-size="11.5" fill="#1A7F37">signal(&amp;q-&gt;not_full);  unlock(...);</text>
+</svg>

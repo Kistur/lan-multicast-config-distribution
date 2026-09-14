@@ -18,7 +18,7 @@
 | 方案 | 问题 |
 | --- | --- |
 | TCP 单播逐台下发 | 服务器要维护 N 条连接、发送 N 次，连接数和 CPU 随终端数线性增长 |
-| 人工通知（微信/群聊/电话） | 依赖人执行，会漏看、会延迟，且无法审计「谁在什么时间下了什么指令」 |
+| 人工通知（群聊/电话） | 依赖人执行，会漏看、会延迟，且无法审计「谁在什么时间下了什么指令」 |
 | 公网 SaaS / 企业微信 API | 按调用次数收费，且把内网设备暴露到公网，攻击面大 |
 
 本系统的思路是：**服务器只「喊一嗓子」（一次 UDP 组播发送），由交换机硬件负责把数据包复制给所有终端**。服务器压力与终端数量解耦，1 秒内可覆盖上千台设备，且完全运行在内网。
@@ -28,7 +28,7 @@
 ## 二、核心功能
 
 1. **管理员 TCP 接入与权限分级**
-   管理员 `telnet` 连接服务器 `9999` 端口，先输入权限等级（1~3），等级即指令优先级，随包下发；高优先级终端可立即执行。
+   管理员 `telnet` 连接服务器 `9999` 端口，先输入权限等级（1~3），等级即指令优先级，随包下发；高优先级指令终端会立即执行。
 2. **UDP 组播一次下发**
    服务器把指令打包成自定义二进制协议 `MsgPacket`，向组播组 `239.1.1.1:8888` 发送**一次**，所有加入该组的终端同时收到。
 3. **指令历史异步落库**
@@ -38,50 +38,11 @@
 
 ## 三、系统架构
 
-```mermaid
-graph LR
-    A["管理员<br/>telnet 127.0.0.1:9999"] -->|TCP| B["服务器 Server"]
+![系统架构](docs/01-architecture.svg)
 
-    subgraph S["服务器进程（Linux）"]
-        B --> C["主线程 epoll<br/>管理多管理员连接"]
-        C -->|push| D["组播发送队列<br/>环形队列 + 互斥锁 + 条件变量"]
-        C -->|push| E["数据库队列<br/>环形队列 + 互斥锁 + 条件变量"]
-        D -->|pop| F["组播发送线程<br/>udp_sender_thread"]
-        E -->|pop| G["DB 写入线程<br/>db_writer_thread"]
-    end
+### 一条指令的完整生命周期
 
-    F -->|"UDP 组播 sendto ×1"| H["组播组 239.1.1.1:8888"]
-    H -->|交换机硬件复制| I["终端 recv"]
-    H --> J["终端 recv"]
-    H --> K["终端 recv"]
-    H --> L["... 上千台"]
-    G --> M[("SQLite<br/>commands.db")]
-```
-
-### 数据流时序
-
-```mermaid
-sequenceDiagram
-    participant Admin as 管理员
-    participant Main as 主线程(epoll)
-    participant Q as 组播队列
-    participant Sender as 组播发送线程
-    participant SW as 交换机
-    participant Dev as 终端(recv)
-    participant DB as DB线程/SQLite
-
-    Admin->>Main: TCP 连接 + 权限等级(1-3)
-    Main-->>Admin: Level confirmed. Send commands.
-    Admin->>Main: 发送指令 (如 reboot)
-    Main->>Main: 组装 MsgPacket(cmd/len/priority/data/sender_ip)
-    Main->>Q: queue_push()
-    Main->>DB: db_push_record() 异步压入
-    Sender->>Q: queue_pop() 阻塞取包
-    Sender->>SW: sendto 组播地址 (仅 1 次)
-    SW-->>Dev: 硬件复制数据包
-    Dev->>Dev: 解析并打印/执行指令
-    DB->>DB: sqlite3预编译绑定 + 落库
-```
+![指令生命周期](docs/02-flow.svg)
 
 ### 线程模型
 
@@ -92,6 +53,10 @@ sequenceDiagram
 | DB 写入线程 | 从 DB 队列取包，写入 SQLite | 预编译语句 + 绑定参数，避免 SQL 拼接 |
 
 线程之间**不共享业务数据**，只通过两个线程安全队列传递 `MsgPacket`，形成两组经典的生产者-消费者模型。
+
+### 生产者-消费者队列
+
+![线程安全队列](docs/03-producer-consumer.svg)
 
 ---
 
@@ -199,6 +164,7 @@ sqlite3 commands.db "SELECT * FROM t_commands;"
 │   └── tcp_server.c          # TCP 服务端原型（早期版本，保留演进记录）
 ├── client/
 │   └── multicast_recv.c      # 终端接收程序：加组 + 收包解析
+├── docs/                     # 架构图与流程图（SVG 源文件）
 └── commands.db               # 运行后生成（已 gitignore）
 ```
 
@@ -207,7 +173,7 @@ sqlite3 commands.db "SELECT * FROM t_commands;"
 ## 七、技术要点
 
 - **为什么用组播而不是广播**：广播（`255.255.255.255`）会打扰网段内所有主机且通常被路由器隔离；组播只有加入组的成员才会收，可跨网段且不打扰无关设备。
-- **为什么用 epoll 而不是 select/ppoll**：`select` 有 FD_SETSIZE（1024）上限且每次调用要重复拷贝 fd 集合，O(n) 轮询；`epoll` 使用内核红黑树 + 就绪队列，事件复杂度 O(1)，适合管理大量管理员长连接。
+- **为什么用 epoll 而不是 select/poll**：`select` 有 `FD_SETSIZE`（1024）上限且每次调用要重复拷贝 fd 集合、O(n) 轮询；`epoll` 使用内核红黑树 + 就绪队列，事件复杂度 O(1)，适合管理大量管理员长连接。
 - **双队列解耦**：组播下发与数据库写入分成两个队列、两个消费者线程。数据库是慢 I/O，即便 SQLite 瞬时抖动，也不会拖慢指令下发主链路。
 - **生产者-消费者实现**：固定大小环形缓冲区 + `pthread_mutex_t` 保证互斥，`not_empty` / `not_full` 两个条件变量实现阻塞等待，避免忙轮询空转 CPU。
 - **SQLite 预编译语句**：`sqlite3_prepare_v2` 只编译一次，循环内 `bind` + `step` + `reset`，既提升性能又天然避免 SQL 注入。

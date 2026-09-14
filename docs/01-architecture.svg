@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="1000" height="620" font-family="Segoe UI, Microsoft YaHei, PingFang SC, sans-serif">
+  <defs>
+    <marker id="arw" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#57606A"/>
+    </marker>
+    <marker id="arwB" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#0969DA"/>
+    </marker>
+    <marker id="arwR" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#CF222E"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="620" fill="#ffffff"/>
+  <text x="500" y="34" text-anchor="middle" font-size="21" font-weight="700" fill="#1F2328">企业级局域网组播配置分发系统 · 系统架构</text>
+
+  <!-- 服务器容器 -->
+  <rect x="180" y="60" width="520" height="500" rx="14" fill="#F6F8FA" stroke="#D0D7DE" stroke-width="1.5"/>
+  <text x="200" y="86" font-size="13" font-weight="600" fill="#57606A">服务器进程（Linux · 单进程多线程）</text>
+
+  <!-- 主线程 -->
+  <rect x="210" y="100" width="460" height="70" rx="10" fill="#DDF4FF" stroke="#0969DA" stroke-width="1.5"/>
+  <text x="440" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#0A3069">主线程 · epoll 事件循环</text>
+  <text x="440" y="150" text-anchor="middle" font-size="12.5" fill="#0969DA">监听 9999 端口 · accept 管理员连接 · 接收指令</text>
+
+  <!-- 数据库队列（左） -->
+  <rect x="210" y="205" width="210" height="58" rx="10" fill="#FBEFFF" stroke="#8250DF" stroke-width="1.5"/>
+  <text x="315" y="229" text-anchor="middle" font-size="13.5" font-weight="700" fill="#553098">数据库队列</text>
+  <text x="315" y="249" text-anchor="middle" font-size="11.5" fill="#8250DF">异步落库，不阻塞下发链路</text>
+
+  <!-- 组播发送队列（右） -->
+  <rect x="460" y="205" width="210" height="58" rx="10" fill="#FBEFFF" stroke="#8250DF" stroke-width="1.5"/>
+  <text x="565" y="229" text-anchor="middle" font-size="13.5" font-weight="700" fill="#553098">组播发送队列</text>
+  <text x="565" y="249" text-anchor="middle" font-size="11.5" fill="#8250DF">环形缓冲区 + 互斥锁 + 条件变量</text>
+
+  <!-- 子线程2 DB写入（左） -->
+  <rect x="210" y="310" width="210" height="58" rx="10" fill="#DAFBE1" stroke="#1A7F37" stroke-width="1.5"/>
+  <text x="315" y="334" text-anchor="middle" font-size="13.5" font-weight="700" fill="#0F5323">子线程 2 · DB 写入</text>
+  <text x="315" y="354" text-anchor="middle" font-size="11.5" fill="#1A7F37">消费者：预编译语句 + 绑定参数</text>
+
+  <!-- 子线程1 组播发送（右） -->
+  <rect x="460" y="310" width="210" height="58" rx="10" fill="#DAFBE1" stroke="#1A7F37" stroke-width="1.5"/>
+  <text x="565" y="334" text-anchor="middle" font-size="13.5" font-weight="700" fill="#0F5323">子线程 1 · 组播发送</text>
+  <text x="565" y="354" text-anchor="middle" font-size="11.5" fill="#1A7F37">消费者：queue_pop → sendto</text>
+
+  <!-- SQLite -->
+  <rect x="380" y="430" width="240" height="76" rx="10" fill="#FFF8C5" stroke="#9A6700" stroke-width="1.5"/>
+  <text x="500" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#7D4E00">SQLite 数据库</text>
+  <text x="500" y="482" text-anchor="middle" font-size="11.5" fill="#9A6700">commands.db · 指令历史与审计追溯</text>
+  <text x="500" y="499" text-anchor="middle" font-size="10.5" fill="#9A6700">类型 / 优先级 / 内容 / 发送者IP / 时间</text>
+
+  <!-- 主线程 -> 队列 -->
+  <path d="M315,170 L315,201" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <path d="M565,170 L565,201" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <text x="323" y="190" font-size="11" fill="#57606A">push</text>
+  <text x="573" y="190" font-size="11" fill="#57606A">push</text>
+
+  <!-- 队列 -> 子线程 -->
+  <path d="M315,263 L315,306" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <path d="M565,263 L565,306" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <text x="323" y="288" font-size="11" fill="#57606A">pop</text>
+  <text x="573" y="288" font-size="11" fill="#57606A">pop</text>
+
+  <!-- 子线程2 -> SQLite -->
+  <path d="M315,368 L315,398 L470,398 L470,426" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <text x="325" y="390" font-size="11" fill="#57606A">异步写入</text>
+
+  <!-- 管理员 -->
+  <rect x="28" y="268" width="122" height="84" rx="10" fill="#FFF1E5" stroke="#BC4C00" stroke-width="1.5"/>
+  <text x="89" y="302" text-anchor="middle" font-size="14" font-weight="700" fill="#8A3600">管理员</text>
+  <text x="89" y="324" text-anchor="middle" font-size="11.5" fill="#BC4C00">telnet</text>
+  <text x="89" y="341" text-anchor="middle" font-size="11.5" fill="#BC4C00">等级 1 ~ 3</text>
+
+  <path d="M150,310 L168,310 L168,135 L206,135" stroke="#0969DA" stroke-width="1.8" fill="none" marker-end="url(#arwB)"/>
+  <text x="174" y="248" font-size="11.5" font-weight="600" fill="#0969DA">TCP 9999</text>
+
+  <!-- 组播组 -->
+  <rect x="740" y="299" width="122" height="80" rx="10" fill="#FFEFF3" stroke="#CF222E" stroke-width="1.5"/>
+  <text x="801" y="329" text-anchor="middle" font-size="13.5" font-weight="700" fill="#A40E26">UDP 组播组</text>
+  <text x="801" y="350" text-anchor="middle" font-size="11.5" fill="#CF222E">239.1.1.1</text>
+  <text x="801" y="367" text-anchor="middle" font-size="11.5" fill="#CF222E">端口 8888</text>
+
+  <path d="M670,339 L736,339" stroke="#CF222E" stroke-width="1.8" fill="none" marker-end="url(#arwR)"/>
+
+  <!-- 组播组 -> 终端 -->
+  <path d="M862,339 L872,339 L872,211 L876,211" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <path d="M862,339 L876,339" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <path d="M862,339 L872,339 L872,467 L876,467" stroke="#57606A" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+
+  <rect x="880" y="185" width="100" height="52" rx="8" fill="#EAEEF2" stroke="#8C959F" stroke-width="1.2"/>
+  <text x="930" y="216" text-anchor="middle" font-size="12" fill="#424A53">终端 recv</text>
+  <rect x="880" y="313" width="100" height="52" rx="8" fill="#EAEEF2" stroke="#8C959F" stroke-width="1.2"/>
+  <text x="930" y="344" text-anchor="middle" font-size="12" fill="#424A53">终端 recv</text>
+  <rect x="880" y="441" width="100" height="52" rx="8" fill="#EAEEF2" stroke="#8C959F" stroke-width="1.2"/>
+  <text x="930" y="472" text-anchor="middle" font-size="12" fill="#424A53">终端 recv</text>
+
+  <text x="930" y="522" text-anchor="middle" font-size="11.5" fill="#57606A">… 上千台</text>
+  <text x="930" y="544" text-anchor="middle" font-size="11" fill="#57606A">交换机硬件复制</text>
+
+  <text x="500" y="590" text-anchor="middle" font-size="12" fill="#57606A">服务器只执行一次 UDP 发送，数据复制由交换机完成 —— 这是 1 秒内覆盖上千台终端的根本原因</text>
+</svg>
