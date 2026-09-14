@@ -1,0 +1,17 @@
+# 编译产物
+server
+recv
+send
+tcpserver
+*.o
+*.out
+
+# 运行时生成的数据库
+*.db
+commands.db
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
